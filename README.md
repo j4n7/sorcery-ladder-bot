@@ -2,10 +2,11 @@
 
 Minimal Discord bot for a Sorcery community ladder.
 
-## What this first version includes
+## What this version includes
 
 - `/report`: report a match without buttons.
 - `/confirm`: confirm a pending match by ID.
+- `/reject`: reject a pending match by ID.
 - `/leaderboard`: competitive ranking.
 - `/activity`: activity ranking.
 - `/avatar`: ranking for one avatar.
@@ -14,6 +15,11 @@ Minimal Discord bot for a Sorcery community ladder.
 - `/admin-cancel-match`: cancel a match.
 - `/admin-set-competitive`: manually mark a match competitive or non-competitive.
 - `/admin-export-csv`: export CSV files.
+- `/admin-seasons`: list seasons.
+- `/admin-new-season`: create and activate a new season.
+- `/admin-activate-season`: activate an existing season.
+- `/admin-close-season`: close the active season.
+- `/admin-setup-status`: show current configuration.
 
 No `/register` command is needed. Players are created automatically when they report or are mentioned.
 
@@ -26,6 +32,34 @@ No `/register` command is needed. Players are created automatically when they re
 - Weekly competitive match limit versus the same opponent: configured by `WEEKLY_OPPONENT_LIMIT`.
 - League week: Monday to Sunday, using `Europe/Madrid` by default.
 - Matches beyond the limit count for activity but not competitive ranking.
+- Matches are assigned automatically to the currently active season.
+
+## Admin permissions
+
+Admin commands are controlled by `ADMIN_USER_IDS`.
+
+Example:
+
+```env
+ADMIN_USER_IDS=123456789012345678,987654321098765432
+```
+
+If `ADMIN_USER_IDS` is empty, admin commands fall back to users with Discord's **Manage Server** permission.
+
+## Channel IDs
+
+The bot can be configured with Discord channel IDs:
+
+```env
+INFO_CHANNEL_ID=
+REPORTS_CHANNEL_ID=
+LEADERBOARD_CHANNEL_ID=
+ERRORS_CHANNEL_ID=
+```
+
+For now, only `REPORTS_CHANNEL_ID` is enforced. If it is set, `/report` can only be used in that channel.
+
+To copy a channel ID, enable Discord Developer Mode and right-click the channel.
 
 ## Setup
 
@@ -38,9 +72,23 @@ npm run deploy:commands
 npm run dev
 ```
 
+## First season
+
+After deploying commands and starting the bot, create the first active season:
+
+```text
+/admin-new-season name:"May 2026" start_date:"2026-05-01" end_date:"2026-05-31"
+```
+
+Check setup:
+
+```text
+/admin-setup-status
+```
+
 ## Local logic test without Discord
 
-This creates fake players and matches directly in SQLite:
+This creates a test season, fake players and matches directly in SQLite:
 
 ```bash
 npm run test:logic
@@ -61,6 +109,7 @@ npm run prisma:studio
 5. Fill `DISCORD_CLIENT_ID` and `DISCORD_GUILD_ID` in `.env`.
 6. Run `npm run deploy:commands`.
 7. Run `npm run dev`.
+8. Create the first season with `/admin-new-season`.
 
 ## Railway deployment notes
 

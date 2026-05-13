@@ -47,3 +47,6 @@ temp/
 
 # Railway / deployment local files, if any
 .railway/
+
+# CSV exports
+exports/

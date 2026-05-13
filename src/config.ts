@@ -18,6 +18,20 @@ function getOptionalNumberEnv(name: string, fallback: number): number {
   return parsed;
 }
 
+function getOptionalCsvEnv(name: string): string[] {
+  const value = process.env[name];
+  if (!value) return [];
+  return value
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
+function getOptionalEnv(name: string): string | undefined {
+  const value = process.env[name]?.trim();
+  return value || undefined;
+}
+
 export const config = {
   discordToken: getRequiredEnv("DISCORD_TOKEN"),
   discordClientId: getRequiredEnv("DISCORD_CLIENT_ID"),
@@ -25,5 +39,10 @@ export const config = {
   timezone: process.env.TIMEZONE ?? "Europe/Madrid",
   weeklyMatchLimit: getOptionalNumberEnv("WEEKLY_MATCH_LIMIT", 5),
   weeklyOpponentLimit: getOptionalNumberEnv("WEEKLY_OPPONENT_LIMIT", 2),
-  avatarMinMatches: getOptionalNumberEnv("AVATAR_MIN_MATCHES", 3)
+  avatarMinMatches: getOptionalNumberEnv("AVATAR_MIN_MATCHES", 3),
+  adminUserIds: getOptionalCsvEnv("ADMIN_USER_IDS"),
+  infoChannelId: getOptionalEnv("INFO_CHANNEL_ID"),
+  reportsChannelId: getOptionalEnv("REPORTS_CHANNEL_ID"),
+  leaderboardChannelId: getOptionalEnv("LEADERBOARD_CHANNEL_ID"),
+  errorsChannelId: getOptionalEnv("ERRORS_CHANNEL_ID")
 };

@@ -2,9 +2,17 @@ import { prisma } from "./db/prisma.js";
 import { reportMatch, confirmMatch } from "./services/matchService.js";
 import { getCompetitiveLeaderboard } from "./services/leaderboardService.js";
 import { getActivityLeaderboard } from "./services/activityService.js";
+import { createAndActivateSeason } from "./services/seasonService.js";
 
 async function main() {
-  console.log("Creating sample matches...");
+  console.log("Creating sample season and matches...");
+
+  await createAndActivateSeason({
+    name: "Test Season",
+    startsAt: new Date("2026-05-01T00:00:00.000Z"),
+    endsAt: new Date("2026-06-01T00:00:00.000Z")
+  });
+
 
   const match1 = await reportMatch({
     reporterDiscordId: "1001",

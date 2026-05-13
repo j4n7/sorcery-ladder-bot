@@ -1,6 +1,7 @@
 import { ChatInputCommandInteraction, SlashCommandBuilder } from "discord.js";
 import { AVATARS } from "../utils/avatarList.js";
 import { reportMatch } from "../services/matchService.js";
+import { config } from "../config.js";
 
 export const reportCommand = new SlashCommandBuilder()
   .setName("report")
@@ -15,6 +16,11 @@ export const reportCommand = new SlashCommandBuilder()
   ));
 
 export async function handleReport(interaction: ChatInputCommandInteraction) {
+  if (config.reportsChannelId && interaction.channelId !== config.reportsChannelId) {
+    await interaction.reply({ content: `Please use <#${config.reportsChannelId}> to report league matches.`, ephemeral: true });
+    return;
+  }
+
   const opponent = interaction.options.getUser("opponent", true);
   if (opponent.bot) {
     await interaction.reply({ content: "You cannot report a match against a bot.", ephemeral: true });

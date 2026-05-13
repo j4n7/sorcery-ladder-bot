@@ -10,10 +10,20 @@ import {
   adminCancelMatchCommand,
   adminSetCompetitiveCommand,
   adminExportCsvCommand,
+  adminSeasonsCommand,
+  adminNewSeasonCommand,
+  adminActivateSeasonCommand,
+  adminCloseSeasonCommand,
+  adminSetupStatusCommand,
   handleAdminMatches,
   handleAdminCancelMatch,
   handleAdminSetCompetitive,
-  handleAdminExportCsv
+  handleAdminExportCsv,
+  handleAdminSeasons,
+  handleAdminNewSeason,
+  handleAdminActivateSeason,
+  handleAdminCloseSeason,
+  handleAdminSetupStatus
 } from "./admin.js";
 
 export const commands = [
@@ -27,7 +37,12 @@ export const commands = [
   adminMatchesCommand,
   adminCancelMatchCommand,
   adminSetCompetitiveCommand,
-  adminExportCsvCommand
+  adminExportCsvCommand,
+  adminSeasonsCommand,
+  adminNewSeasonCommand,
+  adminActivateSeasonCommand,
+  adminCloseSeasonCommand,
+  adminSetupStatusCommand
 ];
 
 export const commandData: RESTPostAPIChatInputApplicationCommandsJSONBody[] = commands.map((command) => command.toJSON());
@@ -66,6 +81,21 @@ export async function handleCommand(interaction: ChatInputCommandInteraction) {
       break;
     case "admin-export-csv":
       await handleAdminExportCsv(interaction);
+      break;
+    case "admin-seasons":
+      await handleAdminSeasons(interaction);
+      break;
+    case "admin-new-season":
+      await handleAdminNewSeason(interaction);
+      break;
+    case "admin-activate-season":
+      await handleAdminActivateSeason(interaction);
+      break;
+    case "admin-close-season":
+      await handleAdminCloseSeason(interaction);
+      break;
+    case "admin-setup-status":
+      await handleAdminSetupStatus(interaction);
       break;
     default:
       await interaction.reply({ content: "Unknown command.", ephemeral: true });
