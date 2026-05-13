@@ -1,0 +1,81 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum MatchStatus {
+  PENDING
+  CONFIRMED
+  REJECTED
+  CANCELLED
+}
+
+enum ResultType {
+  PLAYER_1_WIN
+  PLAYER_2_WIN
+  DRAW
+}
+
+enum NonCompetitiveReason {
+  WEEKLY_PLAYER_LIMIT
+  WEEKLY_OPPONENT_LIMIT
+  ADMIN_OVERRIDE
+  CANCELLED
+}
+
+model Player {
+  id          Int      @id @default(autoincrement())
+  discordId   String   @unique
+  displayName String
+  firstSeenAt DateTime @default(now())
+  lastSeenAt  DateTime @updatedAt
+
+  reportedMatches Match[] @relation("ReportedMatches")
+  matchesAsPlayer1 Match[] @relation("Player1Matches")
+  matchesAsPlayer2 Match[] @relation("Player2Matches")
+}
+
+model Season {
+  id        Int      @id @default(autoincrement())
+  name      String
+  startsAt  DateTime
+  endsAt    DateTime
+  isActive  Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  matches   Match[]
+}
+
+model Match {
+  id                     Int                   @id @default(autoincrement())
+  seasonId               Int
+  player1Id              Int
+  player2Id              Int
+  player1Avatar          String
+  player2Avatar          String
+  reportedById           Int
+  resultType             ResultType
+  status                 MatchStatus           @default(PENDING)
+  competitive            Boolean?
+  nonCompetitiveReason   NonCompetitiveReason?
+  reportedAt             DateTime              @default(now())
+  confirmedAt            DateTime?
+  rejectedAt             DateTime?
+  cancelledAt            DateTime?
+  createdAt              DateTime              @default(now())
+  updatedAt              DateTime              @updatedAt
+
+  season     Season @relation(fields: [seasonId], references: [id])
+  player1    Player @relation("Player1Matches", fields: [player1Id], references: [id])
+  player2    Player @relation("Player2Matches", fields: [player2Id], references: [id])
+  reportedBy Player @relation("ReportedMatches", fields: [reportedById], references: [id])
+}
+
+model BotSetting {
+  key   String @id
+  value String
+}
