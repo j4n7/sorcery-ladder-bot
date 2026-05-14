@@ -1,5 +1,6 @@
 import { ChatInputCommandInteraction, SlashCommandBuilder } from "discord.js";
 import { confirmMatch, rejectMatch } from "../services/matchService.js";
+import { tryRefreshLeaderboardMessage } from "../services/leaderboardMessageService.js";
 
 export const confirmCommand = new SlashCommandBuilder()
   .setName("confirm")
@@ -28,6 +29,7 @@ export async function handleConfirm(interaction: ChatInputCommandInteraction) {
       "",
       competitiveText
     ].join("\n"));
+    await tryRefreshLeaderboardMessage(interaction.client);
   } catch (error) {
     await interaction.reply({ content: error instanceof Error ? error.message : "Unknown error.", ephemeral: true });
   }

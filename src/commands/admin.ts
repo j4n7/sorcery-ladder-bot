@@ -11,6 +11,7 @@ import {
   parseSeasonDate
 } from "../services/seasonService.js";
 import { config } from "../config.js";
+import { refreshLeaderboardMessage, tryRefreshLeaderboardMessage } from "../services/leaderboardMessageService.js";
 
 export const adminMatchesCommand = new SlashCommandBuilder()
   .setName("admin-matches")
@@ -56,6 +57,10 @@ export const adminSetupStatusCommand = new SlashCommandBuilder()
   .setName("admin-setup-status")
   .setDescription("Admin: show bot setup status.");
 
+export const adminRefreshLeaderboardCommand = new SlashCommandBuilder()
+  .setName("admin-refresh-leaderboard")
+  .setDescription("Admin: create or refresh the fixed leaderboard message.");
+
 async function requireAdmin(interaction: ChatInputCommandInteraction): Promise<boolean> {
   if (!isAdminInteraction(interaction)) {
     await interaction.reply({ content: "You are not allowed to use this admin command.", ephemeral: true });
@@ -94,6 +99,7 @@ export async function handleAdminCancelMatch(interaction: ChatInputCommandIntera
   const matchId = interaction.options.getInteger("match_id", true);
   await cancelMatch(matchId);
   await interaction.reply(`Match #${matchId} cancelled.`);
+  await tryRefreshLeaderboardMessage(interaction.client);
 }
 
 export async function handleAdminSetCompetitive(interaction: ChatInputCommandInteraction) {
@@ -102,6 +108,7 @@ export async function handleAdminSetCompetitive(interaction: ChatInputCommandInt
   const value = interaction.options.getBoolean("value", true);
   await setCompetitive(matchId, value);
   await interaction.reply(`Match #${matchId} competitive value set to ${value}.`);
+  await tryRefreshLeaderboardMessage(interaction.client);
 }
 
 export async function handleAdminExportCsv(interaction: ChatInputCommandInteraction) {
@@ -135,6 +142,7 @@ export async function handleAdminNewSeason(interaction: ChatInputCommandInteract
 
   const season = await createAndActivateSeason({ name, startsAt, endsAt });
   await interaction.reply(`Season #${season.id} created and activated: ${season.name}. New matches will now be assigned to this season.`);
+  await tryRefreshLeaderboardMessage(interaction.client);
 }
 
 export async function handleAdminActivateSeason(interaction: ChatInputCommandInteraction) {
@@ -142,12 +150,14 @@ export async function handleAdminActivateSeason(interaction: ChatInputCommandInt
   const seasonId = interaction.options.getInteger("season_id", true);
   const season = await activateSeason(seasonId);
   await interaction.reply(`Season #${season.id} activated: ${season.name}. New matches will now be assigned to this season.`);
+  await tryRefreshLeaderboardMessage(interaction.client);
 }
 
 export async function handleAdminCloseSeason(interaction: ChatInputCommandInteraction) {
   if (!(await requireAdmin(interaction))) return;
   const season = await closeActiveSeason();
   await interaction.reply(`Season #${season.id} closed: ${season.name}. New matches cannot be reported until another season is activated.`);
+  await tryRefreshLeaderboardMessage(interaction.client);
 }
 
 export async function handleAdminSetupStatus(interaction: ChatInputCommandInteraction) {
@@ -157,6 +167,7 @@ export async function handleAdminSetupStatus(interaction: ChatInputCommandIntera
   await interaction.reply([
     "Setup status",
     "",
+    `League name: ${config.leagueName}`,
     `Active season: ${activeSeason ? `#${activeSeason.id} ${activeSeason.name}` : "none"}`,
     `Info channel: ${formatChannelStatus(config.infoChannelId)}`,
     `Reports channel: ${formatChannelStatus(config.reportsChannelId)}`,
@@ -168,4 +179,16 @@ export async function handleAdminSetupStatus(interaction: ChatInputCommandIntera
     `Weekly opponent limit: ${config.weeklyOpponentLimit}`,
     `Avatar minimum matches: ${config.avatarMinMatches}`
   ].join("\n"));
+}
+
+
+export async function handleAdminRefreshLeaderboard(interaction: ChatInputCommandInteraction) {
+  if (!(await requireAdmin(interaction))) return;
+
+  try {
+    const messageId = await refreshLeaderboardMessage(interaction.client);
+    await interaction.reply(`Fixed leaderboard message refreshed. Message ID: ${messageId}.`);
+  } catch (error) {
+    await interaction.reply({ content: error instanceof Error ? error.message : "Unknown error.", ephemeral: true });
+  }
 }

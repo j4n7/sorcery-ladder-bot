@@ -15,6 +15,7 @@ import {
   adminActivateSeasonCommand,
   adminCloseSeasonCommand,
   adminSetupStatusCommand,
+  adminRefreshLeaderboardCommand,
   handleAdminMatches,
   handleAdminCancelMatch,
   handleAdminSetCompetitive,
@@ -23,7 +24,8 @@ import {
   handleAdminNewSeason,
   handleAdminActivateSeason,
   handleAdminCloseSeason,
-  handleAdminSetupStatus
+  handleAdminSetupStatus,
+  handleAdminRefreshLeaderboard
 } from "./admin.js";
 
 export const commands = [
@@ -42,7 +44,8 @@ export const commands = [
   adminNewSeasonCommand,
   adminActivateSeasonCommand,
   adminCloseSeasonCommand,
-  adminSetupStatusCommand
+  adminSetupStatusCommand,
+  adminRefreshLeaderboardCommand
 ];
 
 export const commandData: RESTPostAPIChatInputApplicationCommandsJSONBody[] = commands.map((command) => command.toJSON());
@@ -96,6 +99,9 @@ export async function handleCommand(interaction: ChatInputCommandInteraction) {
       break;
     case "admin-setup-status":
       await handleAdminSetupStatus(interaction);
+      break;
+    case "admin-refresh-leaderboard":
+      await handleAdminRefreshLeaderboard(interaction);
       break;
     default:
       await interaction.reply({ content: "Unknown command.", ephemeral: true });

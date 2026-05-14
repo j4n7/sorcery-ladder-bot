@@ -20,6 +20,7 @@ Minimal Discord bot for a Sorcery community ladder.
 - `/admin-activate-season`: activate an existing season.
 - `/admin-close-season`: close the active season.
 - `/admin-setup-status`: show current configuration.
+- `/admin-refresh-leaderboard`: create or refresh the fixed leaderboard message.
 
 No `/register` command is needed. Players are created automatically when they report or are mentioned.
 
@@ -46,6 +47,14 @@ ADMIN_USER_IDS=123456789012345678,987654321098765432
 
 If `ADMIN_USER_IDS` is empty, admin commands fall back to users with Discord's **Manage Server** permission.
 
+## League name
+
+The public fixed leaderboard title can be configured with:
+
+```env
+LEAGUE_NAME="Sorcery Hispanic Ladder"
+```
+
 ## Channel IDs
 
 The bot can be configured with Discord channel IDs:
@@ -57,7 +66,9 @@ LEADERBOARD_CHANNEL_ID=
 ERRORS_CHANNEL_ID=
 ```
 
-For now, only `REPORTS_CHANNEL_ID` is enforced. If it is set, `/report` can only be used in that channel.
+`REPORTS_CHANNEL_ID` is enforced. If it is set, `/report` can only be used in that channel.
+
+`LEADERBOARD_CHANNEL_ID` is used by `/admin-refresh-leaderboard` and by the automatic leaderboard refresh after confirmed matches.
 
 To copy a channel ID, enable Discord Developer Mode and right-click the channel.
 
@@ -84,6 +95,12 @@ Check setup:
 
 ```text
 /admin-setup-status
+```
+
+Create or refresh the fixed leaderboard message:
+
+```text
+/admin-refresh-leaderboard
 ```
 
 ## Local logic test without Discord
