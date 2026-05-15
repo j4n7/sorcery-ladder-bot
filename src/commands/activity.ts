@@ -1,5 +1,6 @@
 import { ChatInputCommandInteraction, SlashCommandBuilder } from "discord.js";
 import { getActivityLeaderboard } from "../services/activityService.js";
+import { displayPlayerName } from "../utils/display.js";
 
 export const activityCommand = new SlashCommandBuilder()
   .setName("activity")
@@ -12,6 +13,6 @@ export async function handleActivity(interaction: ChatInputCommandInteraction) {
     return;
   }
 
-  const lines = rows.slice(0, 20).map((entry, index) => `${index + 1}. ${entry.displayName}, ${entry.matches} matches`);
+  const lines = rows.slice(0, 20).map((entry, index) => `${index + 1}. ${displayPlayerName(entry.displayName, entry.countryFlag)}, ${entry.matches} matches`);
   await interaction.reply(["Activity ranking", "", ...lines].join("\n"));
 }

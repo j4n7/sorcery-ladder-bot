@@ -32,6 +32,10 @@ function formatRecord(stats: { wins: number; draws: number; losses: number }): s
   return `${stats.wins}-${stats.draws}-${stats.losses}`;
 }
 
+function formatCountryCell(flag?: string | null): string {
+  return flag ?? "";
+}
+
 function formatDateTime(date: Date): string {
   return new Intl.DateTimeFormat("en-GB", {
     timeZone: config.timezone,
@@ -46,7 +50,7 @@ function formatDateTime(date: Date): string {
 function formatCompetitiveRows(rows: PlayerStats[]): string[] {
   if (rows.length === 0) return ["No competitive matches confirmed yet."];
 
-  const header = `${pad("#", 3)} ${pad("Player", PLAYER_COLUMN_WIDTH)} ${pad("Pts", 5)} ${pad("W-D-L", 8)} ${pad("WR", 6)} ${pad("Games", 5)}`;
+  const header = `${pad("#", 3)} ${pad("Player", PLAYER_COLUMN_WIDTH)} ${pad("Pts", 5)} ${pad("W-D-L", 8)} ${pad("WR", 6)} ${pad("Games", 5)} Country`;
   const body = rows.slice(0, MAX_COMPETITIVE_ROWS).map((row, index) => {
     const winrate = row.matches === 0 ? 0 : row.wins / row.matches;
     return [
@@ -55,22 +59,24 @@ function formatCompetitiveRows(rows: PlayerStats[]): string[] {
       pad(row.points, 5),
       pad(formatRecord(row), 8),
       pad(formatPercent(winrate), 6),
-      pad(row.matches, 5)
+      pad(row.matches, 5),
+      formatCountryCell(row.countryFlag)
     ].join(" ");
   });
 
   return [header, ...body];
 }
 
-function formatActivityRows(rows: Array<{ displayName: string; matches: number }>): string[] {
+function formatActivityRows(rows: Array<{ displayName: string; countryFlag: string | null; matches: number }>): string[] {
   if (rows.length === 0) return ["No confirmed matches yet."];
 
-  const header = `${pad("#", 3)} ${pad("Player", PLAYER_COLUMN_WIDTH)} ${pad("Games", 5)}`;
+  const header = `${pad("#", 3)} ${pad("Player", PLAYER_COLUMN_WIDTH)} ${pad("Games", 5)} Country`;
   const body = rows.slice(0, MAX_ACTIVITY_ROWS).map((row, index) => {
     return [
       pad(index + 1, 3),
       pad(truncate(row.displayName, PLAYER_COLUMN_WIDTH), PLAYER_COLUMN_WIDTH),
-      pad(row.matches, 5)
+      pad(row.matches, 5),
+      formatCountryCell(row.countryFlag)
     ].join(" ");
   });
 
@@ -80,6 +86,7 @@ function formatActivityRows(rows: Array<{ displayName: string; matches: number }
 type AvatarLeaderRow = {
   avatar: string;
   displayName: string;
+  countryFlag: string | null;
   points: number;
   wins: number;
   draws: number;
@@ -90,14 +97,15 @@ type AvatarLeaderRow = {
 function formatAvatarLeaderRows(rows: AvatarLeaderRow[]): string[] {
   if (rows.length === 0) return ["No avatar data yet."];
 
-  const header = `${pad("Avatar", AVATAR_COLUMN_WIDTH)} ${pad("Best Pilot", PILOT_COLUMN_WIDTH)} ${pad("Pts", 5)} ${pad("W-D-L", 8)} ${pad("Games", 5)}`;
+  const header = `${pad("Avatar", AVATAR_COLUMN_WIDTH)} ${pad("Best Pilot", PILOT_COLUMN_WIDTH)} ${pad("Pts", 5)} ${pad("W-D-L", 8)} ${pad("Games", 5)} Country`;
   const body = rows.map((row) => {
     return [
       pad(truncate(row.avatar, AVATAR_COLUMN_WIDTH), AVATAR_COLUMN_WIDTH),
       pad(truncate(row.displayName, PILOT_COLUMN_WIDTH), PILOT_COLUMN_WIDTH),
       pad(row.points, 5),
       pad(formatRecord(row), 8),
-      pad(row.matches, 5)
+      pad(row.matches, 5),
+      formatCountryCell(row.countryFlag)
     ].join(" ");
   });
 
@@ -115,6 +123,7 @@ async function getAvatarLeaderRows(): Promise<AvatarLeaderRow[]> {
     rows.push({
       avatar,
       displayName: leader.displayName,
+      countryFlag: leader.countryFlag,
       points: leader.points,
       wins: leader.wins,
       draws: leader.draws,

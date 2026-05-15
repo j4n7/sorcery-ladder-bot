@@ -6,14 +6,37 @@ import { config } from "../config.js";
 export const reportCommand = new SlashCommandBuilder()
   .setName("report")
   .setDescription("Report a league match.")
-  .addUserOption((option) => option.setName("opponent").setDescription("The opponent.").setRequired(true))
-  .addStringOption((option) => option.setName("my_avatar").setDescription("Your avatar.").setRequired(true).addChoices(...AVATARS.map((avatar) => ({ name: avatar, value: avatar }))))
-  .addStringOption((option) => option.setName("opponent_avatar").setDescription("Opponent avatar.").setRequired(true).addChoices(...AVATARS.map((avatar) => ({ name: avatar, value: avatar }))))
-  .addStringOption((option) => option.setName("result").setDescription("Your result.").setRequired(true).addChoices(
-    { name: "Win", value: "win" },
-    { name: "Loss", value: "loss" },
-    { name: "Draw", value: "draw" }
-  ));
+  .addUserOption((option) =>
+    option
+      .setName("opponent")
+      .setDescription("The opponent.")
+      .setRequired(true)
+  )
+  .addStringOption((option) =>
+    option
+      .setName("my_avatar")
+      .setDescription("Your avatar.")
+      .setRequired(true)
+      .setAutocomplete(true)
+  )
+  .addStringOption((option) =>
+    option
+      .setName("opponent_avatar")
+      .setDescription("Opponent avatar.")
+      .setRequired(true)
+      .setAutocomplete(true)
+  )
+  .addStringOption((option) =>
+    option
+      .setName("result")
+      .setDescription("Your result.")
+      .setRequired(true)
+      .addChoices(
+        { name: "Win", value: "win" },
+        { name: "Loss", value: "loss" },
+        { name: "Draw", value: "draw" }
+      )
+  );
 
 export async function handleReport(interaction: ChatInputCommandInteraction) {
   if (config.reportsChannelId && interaction.channelId !== config.reportsChannelId) {

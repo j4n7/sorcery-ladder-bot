@@ -5,6 +5,7 @@ import { leaderboardCommand, handleLeaderboard } from "./leaderboard.js";
 import { activityCommand, handleActivity } from "./activity.js";
 import { avatarCommand, handleAvatar } from "./avatar.js";
 import { profileCommand, handleProfile } from "./profile.js";
+import { setCountryCommand, removeCountryCommand, handleSetCountry, handleRemoveCountry } from "./country.js";
 import {
   adminMatchesCommand,
   adminCancelMatchCommand,
@@ -36,6 +37,8 @@ export const commands = [
   activityCommand,
   avatarCommand,
   profileCommand,
+  setCountryCommand,
+  removeCountryCommand,
   adminMatchesCommand,
   adminCancelMatchCommand,
   adminSetCompetitiveCommand,
@@ -72,6 +75,12 @@ export async function handleCommand(interaction: ChatInputCommandInteraction) {
       break;
     case "profile":
       await handleProfile(interaction);
+      break;
+    case "set-country":
+      await handleSetCountry(interaction);
+      break;
+    case "remove-country":
+      await handleRemoveCountry(interaction);
       break;
     case "admin-matches":
       await handleAdminMatches(interaction);

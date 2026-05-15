@@ -36,7 +36,7 @@ export const config = {
   discordToken: getRequiredEnv("DISCORD_TOKEN"),
   discordClientId: getRequiredEnv("DISCORD_CLIENT_ID"),
   discordGuildId: getRequiredEnv("DISCORD_GUILD_ID"),
-  leagueName: process.env.LEAGUE_NAME?.trim() || "Sorcery Ladder",
+  leagueName: process.env.LEAGUE_NAME?.trim() || "Sorcery Hispanic Ladder",
   timezone: process.env.TIMEZONE ?? "Europe/Madrid",
   weeklyMatchLimit: getOptionalNumberEnv("WEEKLY_MATCH_LIMIT", 5),
   weeklyOpponentLimit: getOptionalNumberEnv("WEEKLY_OPPONENT_LIMIT", 2),

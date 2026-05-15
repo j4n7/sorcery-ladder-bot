@@ -32,8 +32,8 @@ export async function exportCsvFiles() {
   const files = [
     { name: "players.csv", rows: players },
     { name: "matches.csv", rows: matches },
-    { name: "leaderboard.csv", rows: leaderboard.map((entry, index) => ({ rank: index + 1, displayName: entry.displayName, points: entry.points, wins: entry.wins, losses: entry.losses, draws: entry.draws, matches: entry.matches, opponents: entry.opponents.size })) },
-    { name: "activity.csv", rows: activity.map((entry, index) => ({ rank: index + 1, displayName: entry.displayName, matches: entry.matches })) }
+    { name: "leaderboard.csv", rows: leaderboard.map((entry, index) => ({ rank: index + 1, countryFlag: entry.countryFlag, displayName: entry.displayName, points: entry.points, wins: entry.wins, losses: entry.losses, draws: entry.draws, matches: entry.matches, opponents: entry.opponents.size })) },
+    { name: "activity.csv", rows: activity.map((entry, index) => ({ rank: index + 1, countryFlag: entry.countryFlag, displayName: entry.displayName, matches: entry.matches })) }
   ];
 
   const writtenFiles: string[] = [];

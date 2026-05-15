@@ -31,6 +31,9 @@ model Player {
   id          Int      @id @default(autoincrement())
   discordId   String   @unique
   displayName String
+  countryCode String?
+  countryFlag String?
+  countryName String?
   firstSeenAt DateTime @default(now())
   lastSeenAt  DateTime @updatedAt
 

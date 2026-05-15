@@ -3,6 +3,9 @@ CREATE TABLE "Player" (
     "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
     "discordId" TEXT NOT NULL,
     "displayName" TEXT NOT NULL,
+    "countryCode" TEXT,
+    "countryFlag" TEXT,
+    "countryName" TEXT,
     "firstSeenAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "lastSeenAt" DATETIME NOT NULL
 );

@@ -15,23 +15,23 @@ export async function getAvatarLeaderboard(avatar: string) {
     include: { player1: true, player2: true }
   });
 
-  const map = new Map<number, { displayName: string; points: number; wins: number; losses: number; draws: number; matches: number; opponents: Set<number> }>();
+  const map = new Map<number, { displayName: string; countryFlag: string | null; points: number; wins: number; losses: number; draws: number; matches: number; opponents: Set<number> }>();
 
-  function getEntry(playerId: number, displayName: string) {
-    const entry = map.get(playerId) ?? { displayName, points: 0, wins: 0, losses: 0, draws: 0, matches: 0, opponents: new Set<number>() };
+  function getEntry(playerId: number, displayName: string, countryFlag: string | null) {
+    const entry = map.get(playerId) ?? { displayName, countryFlag, points: 0, wins: 0, losses: 0, draws: 0, matches: 0, opponents: new Set<number>() };
     map.set(playerId, entry);
     return entry;
   }
 
   for (const match of matches) {
     const sides = [
-      { playerId: match.player1Id, opponentId: match.player2Id, displayName: match.player1.displayName, avatar: match.player1Avatar, won: match.resultType === ResultType.PLAYER_1_WIN, lost: match.resultType === ResultType.PLAYER_2_WIN },
-      { playerId: match.player2Id, opponentId: match.player1Id, displayName: match.player2.displayName, avatar: match.player2Avatar, won: match.resultType === ResultType.PLAYER_2_WIN, lost: match.resultType === ResultType.PLAYER_1_WIN }
+      { playerId: match.player1Id, opponentId: match.player2Id, displayName: match.player1.displayName, countryFlag: match.player1.countryFlag, avatar: match.player1Avatar, won: match.resultType === ResultType.PLAYER_1_WIN, lost: match.resultType === ResultType.PLAYER_2_WIN },
+      { playerId: match.player2Id, opponentId: match.player1Id, displayName: match.player2.displayName, countryFlag: match.player2.countryFlag, avatar: match.player2Avatar, won: match.resultType === ResultType.PLAYER_2_WIN, lost: match.resultType === ResultType.PLAYER_1_WIN }
     ];
 
     for (const side of sides) {
       if (side.avatar !== avatar) continue;
-      const entry = getEntry(side.playerId, side.displayName);
+      const entry = getEntry(side.playerId, side.displayName, side.countryFlag);
       entry.matches += 1;
       entry.opponents.add(side.opponentId);
       if (match.resultType === ResultType.DRAW) {

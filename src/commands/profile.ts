@@ -1,6 +1,7 @@
 import { ChatInputCommandInteraction, SlashCommandBuilder } from "discord.js";
 import { getProfile } from "../services/profileService.js";
 import { formatRecord } from "../utils/formatting.js";
+import { displayPlayerName } from "../utils/display.js";
 
 export const profileCommand = new SlashCommandBuilder()
   .setName("profile")
@@ -18,12 +19,13 @@ export async function handleProfile(interaction: ChatInputCommandInteraction) {
   const avatarLines = profile.avatarStats.map((entry) => `- ${entry.avatar}: ${formatRecord(entry.wins, entry.losses, entry.draws)}, ${entry.points} pts`);
 
   await interaction.reply([
-    `${profile.player.displayName}`,
+    `${displayPlayerName(profile.player.displayName, profile.player.countryFlag)}`,
     "",
     `Points: ${profile.points}`,
     `Competitive record: ${formatRecord(profile.wins, profile.losses, profile.draws)}`,
     `Competitive matches: ${profile.competitiveMatches}`,
     `Total matches: ${profile.totalMatches}`,
+    `Country: ${profile.player.countryFlag ? `${profile.player.countryFlag} ${profile.player.countryName} (${profile.player.countryCode})` : "not set"}`,
     `Main avatar: ${profile.mainAvatar}`,
     "",
     "Avatars:",

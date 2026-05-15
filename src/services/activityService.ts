@@ -9,11 +9,11 @@ export async function getActivityLeaderboard() {
     include: { player1: true, player2: true }
   });
 
-  const map = new Map<number, { playerId: number; displayName: string; matches: number }>();
+  const map = new Map<number, { playerId: number; displayName: string; countryFlag: string | null; matches: number }>();
 
   for (const match of matches) {
     for (const player of [match.player1, match.player2]) {
-      const current = map.get(player.id) ?? { playerId: player.id, displayName: player.displayName, matches: 0 };
+      const current = map.get(player.id) ?? { playerId: player.id, displayName: player.displayName, countryFlag: player.countryFlag, matches: 0 };
       current.matches += 1;
       map.set(player.id, current);
     }

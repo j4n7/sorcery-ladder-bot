@@ -5,6 +5,7 @@ import { getActiveSeason } from "./seasonService.js";
 export type PlayerStats = {
   playerId: number;
   displayName: string;
+  countryFlag: string | null;
   points: number;
   wins: number;
   losses: number;
@@ -13,10 +14,10 @@ export type PlayerStats = {
   opponents: Set<number>;
 };
 
-function ensureStats(map: Map<number, PlayerStats>, playerId: number, displayName: string): PlayerStats {
+function ensureStats(map: Map<number, PlayerStats>, playerId: number, displayName: string, countryFlag: string | null): PlayerStats {
   let stats = map.get(playerId);
   if (!stats) {
-    stats = { playerId, displayName, points: 0, wins: 0, losses: 0, draws: 0, matches: 0, opponents: new Set<number>() };
+    stats = { playerId, displayName, countryFlag, points: 0, wins: 0, losses: 0, draws: 0, matches: 0, opponents: new Set<number>() };
     map.set(playerId, stats);
   }
   return stats;
@@ -32,8 +33,8 @@ export async function getCompetitiveLeaderboard() {
   const statsMap = new Map<number, PlayerStats>();
 
   for (const match of matches) {
-    const player1 = ensureStats(statsMap, match.player1Id, match.player1.displayName);
-    const player2 = ensureStats(statsMap, match.player2Id, match.player2.displayName);
+    const player1 = ensureStats(statsMap, match.player1Id, match.player1.displayName, match.player1.countryFlag);
+    const player2 = ensureStats(statsMap, match.player2Id, match.player2.displayName, match.player2.countryFlag);
     player1.matches += 1;
     player2.matches += 1;
     player1.opponents.add(match.player2Id);

@@ -11,6 +11,8 @@ Minimal Discord bot for a Sorcery community ladder.
 - `/activity`: activity ranking.
 - `/avatar`: ranking for one avatar.
 - `/profile`: player profile.
+- `/set-country`: set a country code, save the flag in the ladder and add it to the server nickname.
+- `/remove-country`: remove the country from the ladder and remove the leading flag from the server nickname.
 - `/admin-matches`: recent matches.
 - `/admin-cancel-match`: cancel a match.
 - `/admin-set-competitive`: manually mark a match competitive or non-competitive.
@@ -34,6 +36,7 @@ No `/register` command is needed. Players are created automatically when they re
 - League week: Monday to Sunday, using `Europe/Madrid` by default.
 - Matches beyond the limit count for activity but not competitive ranking.
 - Matches are assigned automatically to the currently active season.
+- Country flags are optional. When set, the flag is shown in leaderboard tables and added to the player server nickname.
 
 ## Admin permissions
 
@@ -122,11 +125,12 @@ npm run prisma:studio
 1. Create an app in the Discord Developer Portal.
 2. Create a bot user and copy the token into `.env`.
 3. Enable the bot permissions needed for slash commands and sending messages.
-4. Invite the bot to your server.
-5. Fill `DISCORD_CLIENT_ID` and `DISCORD_GUILD_ID` in `.env`.
-6. Run `npm run deploy:commands`.
-7. Run `npm run dev`.
-8. Create the first season with `/admin-new-season`.
+4. Enable **Manage Nicknames** if you want `/set-country` to update server nicknames. The bot role must be above normal player roles.
+5. Invite the bot to your server.
+6. Fill `DISCORD_CLIENT_ID` and `DISCORD_GUILD_ID` in `.env`.
+7. Run `npm run deploy:commands`.
+8. Run `npm run dev`.
+9. Create the first season with `/admin-new-season`.
 
 ## Railway deployment notes
 

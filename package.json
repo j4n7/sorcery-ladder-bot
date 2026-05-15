@@ -11,7 +11,13 @@
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev --name init",
     "prisma:studio": "prisma studio",
-    "test:logic": "tsx src/testLogic.ts"
+    "test:logic": "tsx src/testLogic.ts",
+
+    "clean:build": "rm -rf dist build exports",
+    "clean:db": "rm -f prisma/data/league.db prisma/data/league.db-journal",
+    "reset:db": "npm run clean:db && npx prisma migrate dev && npx prisma generate",
+    "reset:dev": "npm run clean:build && npm run reset:db && npm run deploy:commands",
+    "reset:local": "rm -rf node_modules && npm install && npm run reset:dev"
   },
   "dependencies": {
     "@prisma/client": "^6.0.0",
