@@ -113,7 +113,7 @@ export async function handleReport(interaction: ChatInputCommandInteraction) {
     "```",
     `📜 Match #${match.id} reported`,
     "",
-    `${match.player1.displayName} ⚔️ ${match.player2.displayName}`,
+    `${reporterDisplayName} ⚔️ ${opponentDisplayName}`,
     "",
     formatReportPlayerLine(match.player1.displayName, match.player1Avatar),
     formatReportPlayerLine(match.player2.displayName, match.player2Avatar),
