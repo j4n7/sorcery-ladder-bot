@@ -11,4 +11,4 @@ COPY tsconfig.json ./
 COPY src ./src
 RUN npm run build
 
-CMD ["node", "dist/index.js"]
+CMD ["sh", "-c", "npx prisma migrate deploy && node dist/index.js"]
