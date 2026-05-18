@@ -10,6 +10,7 @@
     "deploy:commands": "tsx src/deployCommands.ts",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev --name init",
+    "prisma:migrate:deploy": "prisma migrate deploy",
     "prisma:studio": "prisma studio",
     "test:logic": "tsx src/testLogic.ts",
 
