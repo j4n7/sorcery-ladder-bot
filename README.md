@@ -1,13 +1,13 @@
 # Sorcery Ladder Bot
 
-Minimal Discord bot for a Sorcery community ladder.
+Discord bot for the Liga Hispana de Sorcery.
 
 ## What this version includes
 
 - `/report`: report a match without buttons.
 - `/confirm`: confirm a pending match by ID.
 - `/reject`: reject a pending match by ID.
-- `/leaderboard`: competitive ranking.
+- `/leaderboard`: competitive ranking by win rate.
 - `/activity`: activity ranking.
 - `/avatar`: ranking for one avatar.
 - `/profile`: player profile.
@@ -26,23 +26,60 @@ Minimal Discord bot for a Sorcery community ladder.
 
 No `/register` command is needed. Players are created automatically when they report or are mentioned.
 
-## Rules implemented
+## Competitive ranking rules
 
-- Win: 3 points.
-- Loss: 1 point.
-- Draw: 2 points.
+- The competitive leaderboard is ordered by win rate.
+- A player must reach `LEADERBOARD_MIN_MATCHES` competitive matches to qualify for an official position.
+- Players below the minimum remain visible as unqualified participants.
+- All later competitive matches continue to affect win rate.
+- Legacy points are still calculated internally and included in CSV exports, but do not determine the ranking.
+
+## Avatar ranking rules
+
+A player becomes the Best Pilot of an avatar only when both requirements are met:
+
+- At least `AVATAR_MIN_MATCHES` competitive matches with that avatar.
+- At least `AVATAR_MIN_WIN_RATE` percent win rate with that avatar.
+
+If no player qualifies, the fixed leaderboard shows the leading provisional player and the missing requirement.
+
+## Match limits
+
 - Weekly competitive match limit per player: configured by `WEEKLY_MATCH_LIMIT`.
 - Weekly competitive match limit versus the same opponent: configured by `WEEKLY_OPPONENT_LIMIT`.
 - League week: Monday to Sunday, using `Europe/Madrid` by default.
 - Matches beyond the limit count for activity but not competitive ranking.
 - Matches are assigned automatically to the currently active season.
-- Country flags are optional. When set, the flag is shown in leaderboard tables and added to the player server nickname.
+- Country flags are optional.
+
+## Configuration
+
+Copy `.env.example` to `.env` and configure the values:
+
+```env
+DISCORD_TOKEN=
+DISCORD_CLIENT_ID=
+DISCORD_GUILD_ID=
+ADMIN_USER_IDS=
+INFO_CHANNEL_ID=
+REPORTS_CHANNEL_ID=
+LEADERBOARD_CHANNEL_ID=
+ERRORS_CHANNEL_ID=
+DATABASE_URL="file:./data/league.db"
+TIMEZONE="Europe/Madrid"
+WEEKLY_MATCH_LIMIT=5
+WEEKLY_OPPONENT_LIMIT=2
+LEADERBOARD_MIN_MATCHES=5
+AVATAR_MIN_MATCHES=5
+AVATAR_MIN_WIN_RATE=50
+LEAGUE_NAME="Liga Hispana de Sorcery"
+```
+
+Changing the qualification minimum only requires changing `LEADERBOARD_MIN_MATCHES` and restarting the bot.
 
 ## Admin permissions
 
 Admin commands are controlled by `ADMIN_USER_IDS`.
-
-Example:
 
 ```env
 ADMIN_USER_IDS=123456789012345678,987654321098765432
@@ -50,45 +87,18 @@ ADMIN_USER_IDS=123456789012345678,987654321098765432
 
 If `ADMIN_USER_IDS` is empty, admin commands fall back to users with Discord's **Manage Server** permission.
 
-## League name
-
-The public fixed leaderboard title can be configured with:
-
-```env
-LEAGUE_NAME="Sorcery Hispanic Ladder"
-```
-
-## Channel IDs
-
-The bot can be configured with Discord channel IDs:
-
-```env
-INFO_CHANNEL_ID=
-REPORTS_CHANNEL_ID=
-LEADERBOARD_CHANNEL_ID=
-ERRORS_CHANNEL_ID=
-```
-
-`REPORTS_CHANNEL_ID` is enforced. If it is set, `/report` can only be used in that channel.
-
-`LEADERBOARD_CHANNEL_ID` is used by `/admin-refresh-leaderboard` and by the automatic leaderboard refresh after confirmed matches.
-
-To copy a channel ID, enable Discord Developer Mode and right-click the channel.
-
 ## Setup
 
 ```bash
 npm install
 cp .env.example .env
 npx prisma generate
-npx prisma migrate dev --name init
+npx prisma migrate deploy
 npm run deploy:commands
 npm run dev
 ```
 
 ## First season
-
-After deploying commands and starting the bot, create the first active season:
 
 ```text
 /admin-new-season name:"May 2026" start_date:"2026-05-01" end_date:"2026-05-31"
@@ -106,31 +116,19 @@ Create or refresh the fixed leaderboard message:
 /admin-refresh-leaderboard
 ```
 
-## Local logic test without Discord
+## Validation
 
-This creates a test season, fake players and matches directly in SQLite:
+Compile the project:
+
+```bash
+npm run build
+```
+
+Run the ranking logic tests:
 
 ```bash
 npm run test:logic
 ```
-
-Then open the database visually:
-
-```bash
-npm run prisma:studio
-```
-
-## Discord setup summary
-
-1. Create an app in the Discord Developer Portal.
-2. Create a bot user and copy the token into `.env`.
-3. Enable the bot permissions needed for slash commands and sending messages.
-4. Enable **Manage Nicknames** if you want `/set-country` to update server nicknames. The bot role must be above normal player roles.
-5. Invite the bot to your server.
-6. Fill `DISCORD_CLIENT_ID` and `DISCORD_GUILD_ID` in `.env`.
-7. Run `npm run deploy:commands`.
-8. Run `npm run dev`.
-9. Create the first season with `/admin-new-season`.
 
 ## Railway deployment notes
 

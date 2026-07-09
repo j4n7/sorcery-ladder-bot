@@ -177,7 +177,9 @@ export async function handleAdminSetupStatus(interaction: ChatInputCommandIntera
     `Timezone: ${config.timezone}`,
     `Weekly match limit: ${config.weeklyMatchLimit}`,
     `Weekly opponent limit: ${config.weeklyOpponentLimit}`,
-    `Avatar minimum matches: ${config.avatarMinMatches}`
+    `Leaderboard minimum matches: ${config.leaderboardMinMatches}`,
+    `Avatar minimum matches: ${config.avatarMinMatches}`,
+    `Avatar minimum win rate: ${Math.round(config.avatarMinWinRate * 100)}%`
   ].join("\n"));
 }
 

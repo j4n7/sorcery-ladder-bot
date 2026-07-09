@@ -1,9 +1,9 @@
-export function formatRecord(wins: number, losses: number, draws: number): string {
-  return draws > 0 ? `${wins}-${losses}-${draws}` : `${wins}-${losses}`;
+export function formatRecord(wins: number, draws: number, losses: number): string {
+  return `${wins}-${draws}-${losses}`;
 }
 
-export function formatPercent(value: number): string {
-  return `${(value * 100).toFixed(1)}%`;
+export function formatPercent(value: number, decimals = 0): string {
+  return `${(value * 100).toFixed(decimals)}%`;
 }
 
 export function truncateText(value: string, maxLength: number): string {

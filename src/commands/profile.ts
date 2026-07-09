@@ -1,7 +1,7 @@
 import { ChatInputCommandInteraction, SlashCommandBuilder } from "discord.js";
 import { getProfile } from "../services/profileService.js";
-import { formatRecord } from "../utils/formatting.js";
 import { displayPlayerName } from "../utils/display.js";
+import { formatPercent, formatRecord } from "../utils/formatting.js";
 
 export const profileCommand = new SlashCommandBuilder()
   .setName("profile")
@@ -16,14 +16,21 @@ export async function handleProfile(interaction: ChatInputCommandInteraction) {
     return;
   }
 
-  const avatarLines = profile.avatarStats.map((entry) => `- ${entry.avatar}: ${formatRecord(entry.wins, entry.losses, entry.draws)}, ${entry.points} pts`);
+  const avatarLines = profile.avatarStats.map((entry) => {
+    return `- ${entry.avatar}: ${formatRecord(entry.wins, entry.draws, entry.losses)}, ${formatPercent(entry.winRate)}, ${entry.competitiveMatches} competitive games`;
+  });
+
+  const qualificationStatus = profile.qualified
+    ? "Qualified"
+    : `Not qualified, needs ${profile.gamesNeeded} more ${profile.gamesNeeded === 1 ? "game" : "games"}`;
 
   await interaction.reply([
     `${displayPlayerName(profile.player.displayName, profile.player.countryFlag)}`,
     "",
-    `Points: ${profile.points}`,
-    `Competitive record: ${formatRecord(profile.wins, profile.losses, profile.draws)}`,
+    `Competitive record: ${formatRecord(profile.wins, profile.draws, profile.losses)}`,
+    `Win rate: ${formatPercent(profile.winRate)}`,
     `Competitive matches: ${profile.competitiveMatches}`,
+    `Qualification: ${qualificationStatus}`,
     `Total matches: ${profile.totalMatches}`,
     `Country: ${profile.player.countryFlag ? `${profile.player.countryFlag} ${profile.player.countryName} (${profile.player.countryCode})` : "not set"}`,
     `Main avatar: ${profile.mainAvatar}`,

@@ -1,35 +1,43 @@
-import { Client } from "discord.js";
 import { MatchStatus } from "@prisma/client";
-import { prisma } from "../db/prisma.js";
+import { Client } from "discord.js";
 import { config } from "../config.js";
-import { findActiveSeason } from "./seasonService.js";
-import { getCompetitiveLeaderboard, PlayerStats } from "./leaderboardService.js";
+import { prisma } from "../db/prisma.js";
+import { formatPercent, formatRecord, truncateText } from "../utils/formatting.js";
 import { getActivityLeaderboard } from "./activityService.js";
-import { getAvatarLeaderboard } from "./avatarService.js";
-import { AVATARS } from "../utils/avatarList.js";
+import { AvatarPilotStats, getAllAvatarLeaderboards } from "./avatarService.js";
+import { getCompetitiveLeaderboard, RankedPlayerStats } from "./leaderboardService.js";
+import { findActiveSeason } from "./seasonService.js";
 
 const LEADERBOARD_MESSAGE_ID_KEY = "leaderboardMessageId";
-const MAX_COMPETITIVE_ROWS = 10;
-const MAX_ACTIVITY_ROWS = 10;
+const DISCORD_MESSAGE_LIMIT = 2000;
 const PLAYER_COLUMN_WIDTH = 16;
 const AVATAR_COLUMN_WIDTH = 16;
 const PILOT_COLUMN_WIDTH = 16;
+const STATUS_COLUMN_WIDTH = 22;
 
-function truncate(value: string, maxLength: number): string {
-  if (value.length <= maxLength) return value;
-  return `${value.slice(0, Math.max(0, maxLength - 1))}…`;
-}
+type ActivityRow = {
+  displayName: string;
+  countryFlag: string | null;
+  matches: number;
+};
+
+type AvatarLeaderRow = {
+  avatar: string;
+  pilot: AvatarPilotStats;
+};
+
+type DisplayData = {
+  qualified: RankedPlayerStats[];
+  notQualified: RankedPlayerStats[];
+  activity: ActivityRow[];
+  bestPilots: AvatarLeaderRow[];
+  noBestPilot: AvatarLeaderRow[];
+};
+
+type OmittedCounts = Record<keyof DisplayData, number>;
 
 function pad(value: string | number, width: number): string {
   return String(value).padEnd(width, " ");
-}
-
-function formatPercent(value: number): string {
-  return `${Math.round(value * 100)}%`;
-}
-
-function formatRecord(stats: { wins: number; draws: number; losses: number }): string {
-  return `${stats.wins}-${stats.draws}-${stats.losses}`;
 }
 
 function formatCountryCell(flag?: string | null): string {
@@ -47,92 +55,183 @@ function formatDateTime(date: Date): string {
   }).format(date);
 }
 
-function formatCompetitiveRows(rows: PlayerStats[]): string[] {
-  if (rows.length === 0) return ["No competitive matches confirmed yet."];
+function formatQualifiedRows(rows: RankedPlayerStats[], omitted: number): string[] {
+  const header = `${pad("#", 3)} ${pad("Player", PLAYER_COLUMN_WIDTH)} ${pad("WR", 6)} ${pad("W-D-L", 8)} ${pad("Games", 5)} Country`;
+  const body = rows.map((row, index) => [
+    pad(index + 1, 3),
+    pad(truncateText(row.displayName, PLAYER_COLUMN_WIDTH), PLAYER_COLUMN_WIDTH),
+    pad(formatPercent(row.winRate), 6),
+    pad(formatRecord(row.wins, row.draws, row.losses), 8),
+    pad(row.matches, 5),
+    formatCountryCell(row.countryFlag)
+  ].join(" "));
 
-  const header = `${pad("#", 3)} ${pad("Player", PLAYER_COLUMN_WIDTH)} ${pad("Pts", 5)} ${pad("W-D-L", 8)} ${pad("WR", 6)} ${pad("Games", 5)} Country`;
-  const body = rows.slice(0, MAX_COMPETITIVE_ROWS).map((row, index) => {
-    const winrate = row.matches === 0 ? 0 : row.wins / row.matches;
-    return [
-      pad(index + 1, 3),
-      pad(truncate(row.displayName, PLAYER_COLUMN_WIDTH), PLAYER_COLUMN_WIDTH),
-      pad(row.points, 5),
-      pad(formatRecord(row), 8),
-      pad(formatPercent(winrate), 6),
-      pad(row.matches, 5),
-      formatCountryCell(row.countryFlag)
-    ].join(" ");
-  });
-
+  if (body.length === 0 && omitted === 0) body.push("No qualified players yet.");
+  if (omitted > 0) body.push(`... ${omitted} more qualified ${omitted === 1 ? "player" : "players"}`);
   return [header, ...body];
 }
 
-function formatActivityRows(rows: Array<{ displayName: string; countryFlag: string | null; matches: number }>): string[] {
-  if (rows.length === 0) return ["No confirmed matches yet."];
+function formatNotQualifiedRows(rows: RankedPlayerStats[], omitted: number): string[] {
+  const header = `${pad("#", 3)} ${pad("Player", PLAYER_COLUMN_WIDTH)} ${pad("WR", 6)} ${pad("W-D-L", 8)} ${pad("Games", 5)} ${pad("Needed", 6)} Country`;
+  const body = rows.map((row) => [
+    pad("-", 3),
+    pad(truncateText(row.displayName, PLAYER_COLUMN_WIDTH), PLAYER_COLUMN_WIDTH),
+    pad(formatPercent(row.winRate), 6),
+    pad(formatRecord(row.wins, row.draws, row.losses), 8),
+    pad(row.matches, 5),
+    pad(`+${row.gamesNeeded}`, 6),
+    formatCountryCell(row.countryFlag)
+  ].join(" "));
 
+  if (body.length === 0 && omitted === 0) body.push("None.");
+  if (omitted > 0) body.push(`... ${omitted} more unqualified ${omitted === 1 ? "player" : "players"}`);
+  return [header, ...body];
+}
+
+function formatActivityRows(rows: ActivityRow[], omitted: number): string[] {
   const header = `${pad("#", 3)} ${pad("Player", PLAYER_COLUMN_WIDTH)} ${pad("Games", 5)} Country`;
-  const body = rows.slice(0, MAX_ACTIVITY_ROWS).map((row, index) => {
-    return [
-      pad(index + 1, 3),
-      pad(truncate(row.displayName, PLAYER_COLUMN_WIDTH), PLAYER_COLUMN_WIDTH),
-      pad(row.matches, 5),
-      formatCountryCell(row.countryFlag)
-    ].join(" ");
-  });
+  const body = rows.map((row, index) => [
+    pad(index + 1, 3),
+    pad(truncateText(row.displayName, PLAYER_COLUMN_WIDTH), PLAYER_COLUMN_WIDTH),
+    pad(row.matches, 5),
+    formatCountryCell(row.countryFlag)
+  ].join(" "));
 
+  if (body.length === 0 && omitted === 0) body.push("No confirmed matches yet.");
+  if (omitted > 0) body.push(`... ${omitted} more active ${omitted === 1 ? "player" : "players"}`);
   return [header, ...body];
 }
 
-type AvatarLeaderRow = {
-  avatar: string;
-  displayName: string;
-  countryFlag: string | null;
-  points: number;
-  wins: number;
-  draws: number;
-  losses: number;
-  matches: number;
-};
+function formatBestPilotRows(rows: AvatarLeaderRow[], omitted: number): string[] {
+  const header = `${pad("Avatar", AVATAR_COLUMN_WIDTH)} ${pad("Best Pilot", PILOT_COLUMN_WIDTH)} ${pad("WR", 6)} ${pad("W-D-L", 8)} ${pad("Games", 5)} Country`;
+  const body = rows.map(({ avatar, pilot }) => [
+    pad(truncateText(avatar, AVATAR_COLUMN_WIDTH), AVATAR_COLUMN_WIDTH),
+    pad(truncateText(pilot.displayName, PILOT_COLUMN_WIDTH), PILOT_COLUMN_WIDTH),
+    pad(formatPercent(pilot.winRate), 6),
+    pad(formatRecord(pilot.wins, pilot.draws, pilot.losses), 8),
+    pad(pilot.matches, 5),
+    formatCountryCell(pilot.countryFlag)
+  ].join(" "));
 
-function formatAvatarLeaderRows(rows: AvatarLeaderRow[]): string[] {
-  if (rows.length === 0) return ["No avatar data yet."];
-
-  const header = `${pad("Avatar", AVATAR_COLUMN_WIDTH)} ${pad("Best Pilot", PILOT_COLUMN_WIDTH)} ${pad("Pts", 5)} ${pad("W-D-L", 8)} ${pad("Games", 5)} Country`;
-  const body = rows.map((row) => {
-    return [
-      pad(truncate(row.avatar, AVATAR_COLUMN_WIDTH), AVATAR_COLUMN_WIDTH),
-      pad(truncate(row.displayName, PILOT_COLUMN_WIDTH), PILOT_COLUMN_WIDTH),
-      pad(row.points, 5),
-      pad(formatRecord(row), 8),
-      pad(row.matches, 5),
-      formatCountryCell(row.countryFlag)
-    ].join(" ");
-  });
-
+  if (body.length === 0 && omitted === 0) body.push("No Best Pilots yet.");
+  if (omitted > 0) body.push(`... ${omitted} more qualified ${omitted === 1 ? "avatar" : "avatars"}`);
   return [header, ...body];
 }
 
-async function getAvatarLeaderRows(): Promise<AvatarLeaderRow[]> {
-  const rows: AvatarLeaderRow[] = [];
+function formatPilotStatus(pilot: AvatarPilotStats): string {
+  const reasons: string[] = [];
+  if (pilot.gamesNeeded > 0) {
+    reasons.push(`+${pilot.gamesNeeded} ${pilot.gamesNeeded === 1 ? "game" : "games"}`);
+  }
+  if (!pilot.meetsWinRateRequirement) {
+    reasons.push(`WR below ${formatPercent(config.avatarMinWinRate)}`);
+  }
+  return reasons.join(", ");
+}
 
-  for (const avatar of AVATARS) {
-    const leaderboard = await getAvatarLeaderboard(avatar);
-    const leader = leaderboard.qualified[0];
-    if (!leader) continue;
+function formatNoBestPilotRows(rows: AvatarLeaderRow[], omitted: number): string[] {
+  const header = `${pad("Avatar", AVATAR_COLUMN_WIDTH)} ${pad("Leading Player", PILOT_COLUMN_WIDTH)} ${pad("WR", 6)} ${pad("W-D-L", 8)} ${pad("Games", 5)} ${pad("Status", STATUS_COLUMN_WIDTH)} Country`;
+  const body = rows.map(({ avatar, pilot }) => [
+    pad(truncateText(avatar, AVATAR_COLUMN_WIDTH), AVATAR_COLUMN_WIDTH),
+    pad(truncateText(pilot.displayName, PILOT_COLUMN_WIDTH), PILOT_COLUMN_WIDTH),
+    pad(formatPercent(pilot.winRate), 6),
+    pad(formatRecord(pilot.wins, pilot.draws, pilot.losses), 8),
+    pad(pilot.matches, 5),
+    pad(truncateText(formatPilotStatus(pilot), STATUS_COLUMN_WIDTH), STATUS_COLUMN_WIDTH),
+    formatCountryCell(pilot.countryFlag)
+  ].join(" "));
 
-    rows.push({
-      avatar,
-      displayName: leader.displayName,
-      countryFlag: leader.countryFlag,
-      points: leader.points,
-      wins: leader.wins,
-      draws: leader.draws,
-      losses: leader.losses,
-      matches: leader.matches
-    });
+  if (body.length === 0 && omitted === 0) body.push("None.");
+  if (omitted > 0) body.push(`... ${omitted} more provisional ${omitted === 1 ? "avatar" : "avatars"}`);
+  return [header, ...body];
+}
+
+function buildMessage(
+  seasonName: string,
+  lastUpdate: string,
+  lastConfirmedMatchId: number | null,
+  data: DisplayData,
+  omitted: OmittedCounts
+): string {
+  return [
+    "```text",
+    `🏆 ${config.leagueName}`,
+    `Season: ${seasonName}`,
+    `Last update: ${lastUpdate}`,
+    `Last confirmed match: ${lastConfirmedMatchId ? `#${lastConfirmedMatchId}` : "none"}`,
+    "",
+    "COMPETITIVE LEADERBOARD",
+    "Ranking: Win Rate",
+    `Minimum to qualify: ${config.leaderboardMinMatches} competitive games`,
+    "",
+    "QUALIFIED PLAYERS",
+    ...formatQualifiedRows(data.qualified, omitted.qualified),
+    "",
+    "UNQUALIFIED PLAYERS",
+    ...formatNotQualifiedRows(data.notQualified, omitted.notQualified),
+    "",
+    "ACTIVITY LEADERBOARD",
+    ...formatActivityRows(data.activity, omitted.activity),
+    "",
+    "AVATAR STANDINGS",
+    "Ranking: Win Rate",
+    `Best Pilot: ${config.avatarMinMatches} games and ${formatPercent(config.avatarMinWinRate)} WR`,
+    "",
+    "BEST PILOTS",
+    ...formatBestPilotRows(data.bestPilots, omitted.bestPilots),
+    "",
+    "NO BEST PILOT YET",
+    ...formatNoBestPilotRows(data.noBestPilot, omitted.noBestPilot),
+    "```"
+  ].join("\n");
+}
+
+function fitMessageToDiscordLimit(
+  seasonName: string,
+  lastUpdate: string,
+  lastConfirmedMatchId: number | null,
+  sourceData: DisplayData
+): string {
+  const data: DisplayData = {
+    qualified: [...sourceData.qualified],
+    notQualified: [...sourceData.notQualified],
+    activity: [...sourceData.activity],
+    bestPilots: [...sourceData.bestPilots],
+    noBestPilot: [...sourceData.noBestPilot]
+  };
+  const omitted: OmittedCounts = {
+    qualified: 0,
+    notQualified: 0,
+    activity: 0,
+    bestPilots: 0,
+    noBestPilot: 0
+  };
+
+  const removeLast = (key: keyof DisplayData, minimumRows: number): boolean => {
+    if (data[key].length <= minimumRows) return false;
+    data[key].pop();
+    omitted[key] += 1;
+    return true;
+  };
+
+  let content = buildMessage(seasonName, lastUpdate, lastConfirmedMatchId, data, omitted);
+  while (content.length > DISCORD_MESSAGE_LIMIT) {
+    const removed =
+      removeLast("noBestPilot", 0) ||
+      removeLast("notQualified", 0) ||
+      removeLast("activity", 5) ||
+      removeLast("bestPilots", 1) ||
+      removeLast("qualified", 3) ||
+      removeLast("activity", 0) ||
+      removeLast("qualified", 1);
+
+    if (!removed) {
+      throw new Error("Leaderboard message cannot fit within Discord's 2,000-character limit.");
+    }
+    content = buildMessage(seasonName, lastUpdate, lastConfirmedMatchId, data, omitted);
   }
 
-  return rows;
+  return content;
 }
 
 async function getLastConfirmedMatchId(seasonId: number): Promise<number | null> {
@@ -163,36 +262,40 @@ export async function buildLeaderboardMessageContent(): Promise<string> {
       "ACTIVITY LEADERBOARD",
       "No active season.",
       "",
-      "AVATAR LEADERS",
+      "AVATAR STANDINGS",
       "No active season.",
       "```"
     ].join("\n");
   }
 
-  const [competitiveRows, activityRows, avatarRows, lastConfirmedMatchId] = await Promise.all([
+  const [competitive, activity, avatarLeaderboards, lastConfirmedMatchId] = await Promise.all([
     getCompetitiveLeaderboard(),
     getActivityLeaderboard(),
-    getAvatarLeaderRows(),
+    getAllAvatarLeaderboards(),
     getLastConfirmedMatchId(season.id)
   ]);
 
-  return [
-    "```text",
-    `🏆 ${config.leagueName}`,
-    `Season: ${season.name}`,
-    `Last update: ${lastUpdate}`,
-    `Last confirmed match: ${lastConfirmedMatchId ? `#${lastConfirmedMatchId}` : "none"}`,
-    "",
-    "COMPETITIVE LEADERBOARD",
-    ...formatCompetitiveRows(competitiveRows),
-    "",
-    "ACTIVITY LEADERBOARD",
-    ...formatActivityRows(activityRows),
-    "",
-    "AVATAR LEADERS",
-    ...formatAvatarLeaderRows(avatarRows),
-    "```"
-  ].join("\n");
+  const bestPilots: AvatarLeaderRow[] = [];
+  const noBestPilot: AvatarLeaderRow[] = [];
+
+  for (const leaderboard of avatarLeaderboards) {
+    const bestPilot = leaderboard.qualified[0];
+    if (bestPilot) {
+      bestPilots.push({ avatar: leaderboard.avatar, pilot: bestPilot });
+      continue;
+    }
+
+    const leadingPlayer = leaderboard.notQualified[0];
+    if (leadingPlayer) noBestPilot.push({ avatar: leaderboard.avatar, pilot: leadingPlayer });
+  }
+
+  return fitMessageToDiscordLimit(season.name, lastUpdate, lastConfirmedMatchId, {
+    qualified: competitive.qualified,
+    notQualified: competitive.notQualified,
+    activity,
+    bestPilots,
+    noBestPilot
+  });
 }
 
 async function getStoredLeaderboardMessageId(): Promise<string | null> {

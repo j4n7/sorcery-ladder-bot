@@ -1,8 +1,8 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { prisma } from "../db/prisma.js";
-import { getCompetitiveLeaderboard } from "./leaderboardService.js";
 import { getActivityLeaderboard } from "./activityService.js";
+import { getCompetitiveLeaderboard } from "./leaderboardService.js";
 
 function csvEscape(value: unknown): string {
   const raw = value === null || value === undefined ? "" : String(value);
@@ -29,11 +29,50 @@ export async function exportCsvFiles() {
   const leaderboard = await getCompetitiveLeaderboard();
   const activity = await getActivityLeaderboard();
 
+  const leaderboardRows = [
+    ...leaderboard.qualified.map((entry, index) => ({
+      rank: index + 1,
+      qualified: true,
+      countryFlag: entry.countryFlag,
+      displayName: entry.displayName,
+      winRate: entry.winRate,
+      wins: entry.wins,
+      draws: entry.draws,
+      losses: entry.losses,
+      matches: entry.matches,
+      gamesNeeded: entry.gamesNeeded,
+      opponents: entry.opponents.size,
+      legacyPoints: entry.points
+    })),
+    ...leaderboard.notQualified.map((entry) => ({
+      rank: "",
+      qualified: false,
+      countryFlag: entry.countryFlag,
+      displayName: entry.displayName,
+      winRate: entry.winRate,
+      wins: entry.wins,
+      draws: entry.draws,
+      losses: entry.losses,
+      matches: entry.matches,
+      gamesNeeded: entry.gamesNeeded,
+      opponents: entry.opponents.size,
+      legacyPoints: entry.points
+    }))
+  ];
+
   const files = [
     { name: "players.csv", rows: players },
     { name: "matches.csv", rows: matches },
-    { name: "leaderboard.csv", rows: leaderboard.map((entry, index) => ({ rank: index + 1, countryFlag: entry.countryFlag, displayName: entry.displayName, points: entry.points, wins: entry.wins, losses: entry.losses, draws: entry.draws, matches: entry.matches, opponents: entry.opponents.size })) },
-    { name: "activity.csv", rows: activity.map((entry, index) => ({ rank: index + 1, countryFlag: entry.countryFlag, displayName: entry.displayName, matches: entry.matches })) }
+    { name: "leaderboard.csv", rows: leaderboardRows },
+    {
+      name: "activity.csv",
+      rows: activity.map((entry, index) => ({
+        rank: index + 1,
+        countryFlag: entry.countryFlag,
+        displayName: entry.displayName,
+        matches: entry.matches
+      }))
+    }
   ];
 
   const writtenFiles: string[] = [];

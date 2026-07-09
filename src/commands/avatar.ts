@@ -1,8 +1,8 @@
 import { ChatInputCommandInteraction, SlashCommandBuilder } from "discord.js";
-import { AVATARS } from "../utils/avatarList.js";
+import { config } from "../config.js";
 import { getAvatarLeaderboard } from "../services/avatarService.js";
-import { formatPercent, formatRecord } from "../utils/formatting.js";
 import { displayPlayerName } from "../utils/display.js";
+import { formatPercent, formatRecord } from "../utils/formatting.js";
 
 export const avatarCommand = new SlashCommandBuilder()
   .setName("avatar")
@@ -15,22 +15,38 @@ export const avatarCommand = new SlashCommandBuilder()
       .setAutocomplete(true)
   );
 
+function formatQualificationStatus(entry: {
+  gamesNeeded: number;
+  meetsWinRateRequirement: boolean;
+}): string {
+  const reasons: string[] = [];
+  if (entry.gamesNeeded > 0) {
+    reasons.push(`needs ${entry.gamesNeeded} more ${entry.gamesNeeded === 1 ? "game" : "games"}`);
+  }
+  if (!entry.meetsWinRateRequirement) {
+    reasons.push(`WR below ${formatPercent(config.avatarMinWinRate)}`);
+  }
+  return reasons.join(", ");
+}
+
 export async function handleAvatar(interaction: ChatInputCommandInteraction) {
   const avatar = interaction.options.getString("name", true);
   const result = await getAvatarLeaderboard(avatar);
 
   const qualified = result.qualified.map((entry, index) => {
-    const winrate = entry.matches === 0 ? 0 : entry.wins / entry.matches;
-    return `${index + 1}. ${displayPlayerName(entry.displayName, entry.countryFlag)}, ${entry.points} pts, ${formatRecord(entry.wins, entry.losses, entry.draws)}, ${formatPercent(winrate)}`;
+    return `${index + 1}. ${displayPlayerName(entry.displayName, entry.countryFlag)}, ${formatPercent(entry.winRate)}, ${formatRecord(entry.wins, entry.draws, entry.losses)}, ${entry.matches} games`;
   });
 
-  const notQualified = result.notQualified.map((entry) => `- ${displayPlayerName(entry.displayName, entry.countryFlag)}, ${entry.points} pts, ${formatRecord(entry.wins, entry.losses, entry.draws)}`);
+  const notQualified = result.notQualified.map((entry) => {
+    return `- ${displayPlayerName(entry.displayName, entry.countryFlag)}, ${formatPercent(entry.winRate)}, ${formatRecord(entry.wins, entry.draws, entry.losses)}, ${entry.matches} games, ${formatQualificationStatus(entry)}`;
+  });
 
   await interaction.reply([
     `${avatar} leaderboard`,
+    `Best Pilot requirements: ${config.avatarMinMatches} games and ${formatPercent(config.avatarMinWinRate)} WR`,
     "",
-    "Qualified:",
-    ...(qualified.length > 0 ? qualified : ["No qualified players yet."]),
+    "Qualified pilots:",
+    ...(qualified.length > 0 ? qualified : ["No Best Pilot yet."]),
     "",
     "Not qualified:",
     ...(notQualified.length > 0 ? notQualified : ["None."])
